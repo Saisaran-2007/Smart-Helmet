@@ -11,7 +11,6 @@ import {
   Settings,
   ShieldCheck,
   BatteryMedium,
-  Bell,
   Wifi,
   MapPin,
   Menu,
@@ -25,15 +24,15 @@ import {
   ShieldAlert,
   CheckCircle2,
   Siren,
-  Bike,
-  Zap,
-  Radio,
-  MapPinned,
-  LogIn,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
   UserPlus,
-  LogOut,
+  LogIn,
   HelpCircle,
-  ChevronDown,
+  LogOut,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -67,7 +66,8 @@ L.Icon.Default.mergeOptions({
 
 // Demo rider location
 const riderLocation = [13.0827, 80.2707];
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 
 // Map controls
@@ -85,97 +85,93 @@ function RecenterMap({ location = riderLocation }) {
 }
 
 
-function NavigationPage({ telemetry }) {
-  const [startLocation, setStartLocation] = useState("");
-  const [destination, setDestination] = useState("");
+function FitRoute({ route }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (route.length > 1) {
+      map.fitBounds(route, { padding: [35, 35] });
+    }
+  }, [map, route]);
+
+  return null;
+}
+
+
+function RoutePlanner({ telemetry, mode = "navigation" }) {
+  const [startQuery, setStartQuery] = useState("");
+  const [endQuery, setEndQuery] = useState("");
   const [startResults, setStartResults] = useState([]);
-  const [destinationResults, setDestinationResults] = useState([]);
-  const [selectedStart, setSelectedStart] = useState(null);
-  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [endResults, setEndResults] = useState([]);
+  const [startPlace, setStartPlace] = useState({
+    lat: telemetry.location[0],
+    lon: telemetry.location[1],
+    display_name: "Helmet current location",
+    isHelmet: true,
+  });
+  const [endPlace, setEndPlace] = useState(null);
   const [route, setRoute] = useState([]);
   const [distance, setDistance] = useState(null);
   const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(
-    "Choose a starting location and destination to plan your route."
-  );
+  const [message, setMessage] = useState("Choose a start point and destination to plan your route.");
 
-  const searchPlaces = async (query, setter) => {
-    if (!query.trim()) {
-      setter([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`
-      );
-      if (!response.ok) return;
-      const data = await response.json();
-      setter(data);
-    } catch {
-      setter([]);
-    }
+  const searchPlaces = (value, setter) => {
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(value)}`
+        );
+        if (!response.ok) return;
+        setter(await response.json());
+      } catch {
+        setter([]);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => searchPlaces(startLocation, setStartResults), 500);
-    return () => clearTimeout(timer);
-  }, [startLocation]);
+    if (!startQuery.trim()) {
+      setStartResults([]);
+      return undefined;
+    }
+    return searchPlaces(startQuery, setStartResults);
+  }, [startQuery]);
 
   useEffect(() => {
-    const timer = setTimeout(
-      () => searchPlaces(destination, setDestinationResults),
-      500
-    );
-    return () => clearTimeout(timer);
-  }, [destination]);
+    if (!endQuery.trim()) {
+      setEndResults([]);
+      return undefined;
+    }
+    return searchPlaces(endQuery, setEndResults);
+  }, [endQuery]);
 
-  const chooseStart = (place) => {
-    setSelectedStart(place);
-    setStartLocation(place.display_name);
-    setStartResults([]);
-    setRoute([]);
-    setDistance(null);
-    setDuration(null);
-    setMessage("Starting location selected. Now choose a destination.");
-  };
+  useEffect(() => {
+    if (startPlace?.isHelmet) {
+      setStartPlace((current) => ({
+        ...current,
+        lat: telemetry.location[0],
+        lon: telemetry.location[1],
+      }));
+    }
+  }, [telemetry.location[0], telemetry.location[1]]);
 
-  const planRoute = async (place) => {
-    setSelectedPlace(place);
-    setDestination(place.display_name);
-    setDestinationResults([]);
+  const calculateRoute = async (start, end) => {
+    if (!start || !end) return;
     setLoading(true);
     setMessage("Finding the best driving route...");
 
     try {
-      const startLat = selectedStart
-        ? Number(selectedStart.lat)
-        : Number(telemetry.location[0]);
-      const startLon = selectedStart
-        ? Number(selectedStart.lon)
-        : Number(telemetry.location[1]);
-      const endLat = Number(place.lat);
-      const endLon = Number(place.lon);
-
-      const start = `${startLon},${startLat}`;
-      const end = `${endLon},${endLat}`;
-
       const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`
+        `https://router.project-osrm.org/route/v1/driving/${Number(start.lon)},${Number(start.lat)};${Number(end.lon)},${Number(end.lat)}?overview=full&geometries=geojson`
       );
-
       if (!response.ok) throw new Error("Route service unavailable");
-
       const data = await response.json();
-      if (!data.routes || !data.routes.length) throw new Error("No route found");
+      if (!data.routes?.length) throw new Error("No route found");
 
       const selectedRoute = data.routes[0];
-      const coordinates = selectedRoute.geometry.coordinates.map(
-        ([lon, lat]) => [lat, lon]
-      );
-
-      setRoute(coordinates);
+      setRoute(selectedRoute.geometry.coordinates.map(([lon, lat]) => [lat, lon]));
       setDistance((selectedRoute.distance / 1000).toFixed(1));
       setDuration(Math.max(1, Math.round(selectedRoute.duration / 60)));
       setMessage("Route ready. Follow the highlighted path.");
@@ -183,856 +179,302 @@ function NavigationPage({ telemetry }) {
       setRoute([]);
       setDistance(null);
       setDuration(null);
-      setMessage(
-        "Could not calculate the route right now. Please try another location."
-      );
+      setMessage("Could not calculate this route. Try another location.");
     } finally {
       setLoading(false);
     }
   };
 
+  const selectStart = (place) => {
+    const selected = { ...place, lat: Number(place.lat), lon: Number(place.lon), isHelmet: false };
+    setStartPlace(selected);
+    setStartQuery(place.display_name);
+    setStartResults([]);
+    setRoute([]);
+    setDistance(null);
+    setDuration(null);
+    setMessage(endPlace ? "Start changed. Calculating your new route..." : "Start point selected. Now choose your destination.");
+    if (endPlace) calculateRoute(selected, endPlace);
+  };
+
+  const selectEnd = (place) => {
+    const selected = { ...place, lat: Number(place.lat), lon: Number(place.lon), isHelmet: false };
+    setEndPlace(selected);
+    setEndQuery(place.display_name);
+    setEndResults([]);
+    calculateRoute(startPlace, selected);
+  };
+
   const useHelmetLocation = () => {
-    setSelectedStart(null);
-    setStartLocation("Helmet current location");
+    const place = {
+      lat: telemetry.location[0],
+      lon: telemetry.location[1],
+      display_name: "Helmet current location",
+      isHelmet: true,
+    };
+    setStartPlace(place);
+    setStartQuery("");
     setStartResults([]);
+    if (endPlace) calculateRoute(place, endPlace);
+    else setMessage("Helmet GPS selected as the start point.");
+  };
+
+  const clearPlanner = () => {
+    setStartQuery("");
+    setEndQuery("");
+    setStartResults([]);
+    setEndResults([]);
+    setStartPlace({
+      lat: telemetry.location[0],
+      lon: telemetry.location[1],
+      display_name: "Helmet current location",
+      isHelmet: true,
+    });
+    setEndPlace(null);
     setRoute([]);
     setDistance(null);
     setDuration(null);
-    setMessage("Using the helmet's current GPS location as the start.");
+    setMessage("Choose a start point and destination to plan your route.");
   };
 
-  const clearRoute = () => {
-    setStartLocation("");
-    setDestination("");
-    setStartResults([]);
-    setDestinationResults([]);
-    setSelectedStart(null);
-    setSelectedPlace(null);
-    setRoute([]);
-    setDistance(null);
-    setDuration(null);
-    setMessage("Choose a starting location and destination to plan your route.");
-  };
-
-  const startForMap = selectedStart
-    ? [Number(selectedStart.lat), Number(selectedStart.lon)]
-    : telemetry.location;
+  const title = mode === "routes" ? "Routes" : "Navigation";
+  const subtitle = mode === "routes"
+    ? "Plan and review routes between any two locations."
+    : "Plan a route from any starting point to any destination.";
 
   return (
-    <div className="navigation-page">
-      <div className="navigation-header">
+    <div className={`route-planner-page ${mode === "routes" ? "routes-planner" : "navigation-page"}`}>
+      <div className="route-planner-header">
         <div>
-          <p className="eyebrow">SMART ROUTE PLANNER</p>
-          <h3>Navigation</h3>
-          <p className="page-description">
-            Choose any starting location and any destination, then calculate a route.
-          </p>
+          <p className="eyebrow">{mode === "routes" ? "ROUTE PLANNER" : "SMART ROUTE PLANNER"}</p>
+          <h3>{title}</h3>
+          <p className="page-description">{subtitle}</p>
         </div>
-
-        <div className="gps-live">
-          <span className="status-dot"></span>
-          GPS READY
-        </div>
+        <div className="gps-live"><span className="status-dot"></span>{loading ? "CALCULATING" : "GPS READY"}</div>
       </div>
 
-      <div className="navigation-grid">
-        <div className="navigation-map-card">
+      <div className="route-planner-grid">
+        <div className="route-planner-map-card">
           <MapContainer
-            center={telemetry.location}
+            center={startPlace ? [Number(startPlace.lat), Number(startPlace.lon)] : telemetry.location}
             zoom={13}
             scrollWheelZoom={true}
-            className="navigation-leaflet-map"
+            className="route-planner-map"
           >
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-            <Marker position={startForMap}>
-              <Popup>
-                <strong>{selectedStart ? "Starting location" : "🪖 Helmetra"}</strong>
-                <br />
-                {selectedStart
-                  ? selectedStart.display_name
-                  : "Current GPS location"}
-              </Popup>
-            </Marker>
-
-            {selectedPlace && (
-              <Marker
-                position={[Number(selectedPlace.lat), Number(selectedPlace.lon)]}
-              >
-                <Popup>
-                  <strong>Destination</strong>
-                  <br />
-                  {selectedPlace.display_name}
-                </Popup>
-              </Marker>
-            )}
-
-            {route.length > 0 && (
-              <Polyline
-                positions={route}
-                pathOptions={{ color: "var(--theme-accent, #4f8cff)", weight: 6 }}
-              />
-            )}
-
-            <RecenterMap location={startForMap} />
+            {startPlace && <Marker position={[Number(startPlace.lat), Number(startPlace.lon)]}><Popup><strong>Start point</strong><br />{startPlace.display_name}</Popup></Marker>}
+            {endPlace && <Marker position={[Number(endPlace.lat), Number(endPlace.lon)]}><Popup><strong>Destination</strong><br />{endPlace.display_name}</Popup></Marker>}
+            {route.length > 0 && <Polyline positions={route} pathOptions={{ color: "#8b5cf6", weight: 6 }} />}
+            <FitRoute route={route} />
+            <RecenterMap location={startPlace ? [Number(startPlace.lat), Number(startPlace.lon)] : telemetry.location} />
           </MapContainer>
         </div>
 
-        <div className="navigation-panel">
-          <div className="navigation-search-card">
-            <div className="navigation-section-title">
-              <div className="nav-search-icon">
-                <Navigation size={19} />
-              </div>
-              <div>
-                <span>ROUTE PLANNER</span>
-                <strong>Where are you going?</strong>
-              </div>
+        <div className="route-planner-panel">
+          <div className="route-input-card">
+            <div className="planner-card-heading">
+              <div className="planner-heading-icon blue"><MapPin size={19} /></div>
+              <div><span>START LOCATION</span><strong>Where are you starting?</strong></div>
             </div>
-
-            <div className="route-input-label">FROM</div>
-            <div className="destination-input-wrap">
+            <div className="planner-input-wrap">
               <MapPin size={18} />
-              <input
-                value={startLocation}
-                onChange={(event) => {
-                  setStartLocation(event.target.value);
-                  setSelectedStart(null);
-                }}
-                placeholder="Search starting location..."
-              />
-              <button
-                type="button"
-                className="use-helmet-location"
-                onClick={useHelmetLocation}
-              >
-                Helmet
-              </button>
+              <input value={startQuery} onChange={(event) => setStartQuery(event.target.value)} placeholder="Search any starting location..." />
+              {startQuery && <button className="planner-clear" onClick={() => setStartQuery("")} aria-label="Clear start"><X size={15} /></button>}
             </div>
-
-            {startResults.length > 0 && (
-              <div className="search-results">
-                {startResults.map((place) => (
-                  <button
-                    type="button"
-                    key={place.place_id}
-                    className="search-result"
-                    onClick={() => chooseStart(place)}
-                  >
-                    <MapPin size={17} />
-                    <span>{place.display_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="route-input-label destination-label">TO</div>
-            <div className="destination-input-wrap">
-              <MapPin size={18} />
-              <input
-                value={destination}
-                onChange={(event) => setDestination(event.target.value)}
-                placeholder="Search destination..."
-              />
-              {destination && (
-                <button
-                  type="button"
-                  className="clear-destination"
-                  onClick={clearRoute}
-                  aria-label="Clear route"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            {destinationResults.length > 0 && (
-              <div className="search-results">
-                {destinationResults.map((place) => (
-                  <button
-                    type="button"
-                    key={place.place_id}
-                    className="search-result"
-                    onClick={() => planRoute(place)}
-                  >
-                    <MapPin size={17} />
-                    <span>{place.display_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="route-status">
-              <span className={`route-status-dot ${loading ? "loading" : ""}`} />
-              <span>{message}</span>
-            </div>
-
-            {distance && duration && (
-              <div className="route-summary">
-                <div>
-                  <span>DISTANCE</span>
-                  <strong>{distance} km</strong>
-                </div>
-                <div>
-                  <span>ETA</span>
-                  <strong>{duration} min</strong>
-                </div>
-              </div>
-            )}
-
-            {(selectedStart || selectedPlace) && (
-              <button type="button" className="clear-route-button" onClick={clearRoute}>
-                <X size={16} />
-                Clear Route
-              </button>
-            )}
+            <button className="helmet-location-button" onClick={useHelmetLocation}><Satellite size={15} /> Use helmet's current GPS location</button>
+            {startResults.length > 0 && <div className="planner-search-results">{startResults.map((place) => <button key={place.place_id} className="planner-search-result" onClick={() => selectStart(place)}><MapPin size={16} /><span>{place.display_name}</span></button>)}</div>}
           </div>
+
+          <div className="route-input-card">
+            <div className="planner-card-heading">
+              <div className="planner-heading-icon purple"><Navigation size={19} /></div>
+              <div><span>DESTINATION</span><strong>Where do you want to go?</strong></div>
+            </div>
+            <div className="planner-input-wrap">
+              <MapPin size={18} />
+              <input value={endQuery} onChange={(event) => setEndQuery(event.target.value)} placeholder="Search any destination..." />
+              {endQuery && <button className="planner-clear" onClick={() => setEndQuery("")} aria-label="Clear destination"><X size={15} /></button>}
+            </div>
+            {endResults.length > 0 && <div className="planner-search-results">{endResults.map((place) => <button key={place.place_id} className="planner-search-result" onClick={() => selectEnd(place)}><MapPin size={16} /><span>{place.display_name}</span></button>)}</div>}
+          </div>
+
+          <div className="planner-summary-card">
+            <div className="planner-summary-top">
+              <div><span>ROUTE SUMMARY</span><strong>{distance ? `${distance} km route` : "No route selected"}</strong></div>
+              <button className="planner-reset" onClick={clearPlanner}>Clear</button>
+            </div>
+            <div className="planner-metrics">
+              <div><strong>{distance ? `${distance} km` : "--"}</strong><span>Distance</span></div>
+              <div><strong>{duration ? `${duration} min` : "--"}</strong><span>ETA</span></div>
+            </div>
+            <div className="planner-from-to">
+              <div className="planner-point"><span className="planner-point-dot start"></span><div><small>START</small><strong>{startPlace?.display_name || "Not selected"}</strong></div></div>
+              <div className="planner-connector"></div>
+              <div className="planner-point"><span className="planner-point-dot end"></span><div><small>DESTINATION</small><strong>{endPlace?.display_name || "Not selected"}</strong></div></div>
+            </div>
+            <div className="planner-status"><span className={loading ? "loading" : ""}></span>{message}</div>
+            {route.length > 0 && <button className="start-route-button" onClick={() => setMessage("Route started. Navigation is ready.")}><Navigation size={17} /> Start Route</button>}
+          </div>
+
+          <div className="planner-note"><MapPin size={17} /><div><strong>Any-to-any route planning</strong><span>Choose any starting location and any destination. Helmet GPS is optional and can be used with one tap.</span></div></div>
         </div>
       </div>
 
-      <div className="navigation-lower-grid">
-        <section className="navigation-info-card">
-          <div className="navigation-lower-heading">
-            <div className="navigation-lower-icon"><Route size={18} /></div>
-            <div>
-              <span>ROUTE DETAILS</span>
-              <strong>Your planned journey</strong>
-            </div>
-          </div>
-
-          <div className="navigation-detail-list">
-            <div className="navigation-detail-row">
-              <span>START</span>
-              <strong>{selectedStart ? selectedStart.display_name : "Not selected"}</strong>
-            </div>
-            <div className="navigation-detail-row">
-              <span>DESTINATION</span>
-              <strong>{selectedPlace ? selectedPlace.display_name : "Not selected"}</strong>
-            </div>
-            <div className="navigation-detail-row">
-              <span>ROUTE STATUS</span>
-              <strong className="navigation-accent-value">
-                {loading ? "Calculating..." : route.length ? "Route ready" : "Waiting for locations"}
-              </strong>
-            </div>
-          </div>
-        </section>
-
-        <section className="navigation-info-card navigation-how-card">
-          <div className="navigation-lower-heading">
-            <div className="navigation-lower-icon"><ShieldCheck size={18} /></div>
-            <div>
-              <span>SMART ROUTING</span>
-              <strong>How Helmetra navigation works</strong>
-            </div>
-          </div>
-
-          <div className="navigation-steps">
-            <div><b>01</b><span>Choose any starting location.</span></div>
-            <div><b>02</b><span>Choose any destination.</span></div>
-            <div><b>03</b><span>Helmetra calculates a driving route and ETA.</span></div>
-          </div>
-        </section>
-
-        <section className="navigation-info-card navigation-status-card">
-          <div className="navigation-lower-heading">
-            <div className="navigation-lower-icon"><Satellite size={18} /></div>
-            <div>
-              <span>RIDER LOCATION</span>
-              <strong>Helmet GPS reference</strong>
-            </div>
-          </div>
-
-          <div className="navigation-gps-box">
-            <div>
-              <span>LATITUDE</span>
-              <strong>{Number(telemetry.location[0]).toFixed(4)}</strong>
-            </div>
-            <div>
-              <span>LONGITUDE</span>
-              <strong>{Number(telemetry.location[1]).toFixed(4)}</strong>
-            </div>
-          </div>
-
-          <button type="button" className="navigation-use-gps-button" onClick={useHelmetLocation}>
-            <MapPin size={16} />
-            Use Helmet GPS as Start
-          </button>
-        </section>
-      </div>
+      {mode === "routes" && <RoutesHistory />}
     </div>
   );
 }
 
-function RoutesPage() {
-  const [routeStatus, setRouteStatus] = useState("active");
+function NavigationPage({ telemetry }) {
+  return <RoutePlanner telemetry={telemetry} mode="navigation" />;
+}
 
-  const routeData = {
-    start: "Chennai, Tamil Nadu",
-    destination: "Marina Beach, Chennai",
-    distance: "8.4 km",
-    eta: "18 min",
-    speed: "42 km/h",
-    progress: 62,
-    startedAt: "10:24 PM",
-  };
-
+function RoutesHistory() {
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [search, setSearch] = useState("");
   const recentRoutes = [
-    {
-      from: "Chennai Central",
-      to: "Marina Beach",
-      distance: "8.4 km",
-      time: "18 min",
-      status: "Completed",
-      date: "Today",
-    },
-    {
-      from: "T. Nagar",
-      to: "Anna Nagar",
-      distance: "7.1 km",
-      time: "16 min",
-      status: "Completed",
-      date: "Yesterday",
-    },
-    {
-      from: "Adyar",
-      to: "Guindy",
-      distance: "6.8 km",
-      time: "14 min",
-      status: "Completed",
-      date: "Sep 09",
-    },
-    {
-      from: "Velachery",
-      to: "OMR",
-      distance: "11.2 km",
-      time: "24 min",
-      status: "Completed",
-      date: "Sep 08",
-    },
+    { from: "Chennai Central", to: "Marina Beach", distance: "8.4 km", time: "18 min", status: "Completed", date: "Today" },
+    { from: "T. Nagar", to: "Anna Nagar", distance: "7.1 km", time: "16 min", status: "Completed", date: "Yesterday" },
+    { from: "Adyar", to: "Guindy", distance: "6.8 km", time: "14 min", status: "Completed", date: "Sep 09" },
+    { from: "Velachery", to: "OMR", distance: "11.2 km", time: "24 min", status: "Completed", date: "Sep 08" },
   ];
-
-  const handleRouteAction = () => {
-    setRouteStatus((value) =>
-      value === "active" ? "paused" : "active"
-    );
-  };
+  const filteredRoutes = recentRoutes.filter((item) => `${item.from} ${item.to}`.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="routes-page">
-      <div className="routes-page-header">
-        <div>
-          <p className="eyebrow">RIDE HISTORY & ROUTE MONITORING</p>
-          <h3>Routes</h3>
-          <p className="page-description">
-            Track your current ride, route progress and recently completed journeys.
-          </p>
-        </div>
-
-        <div className={`route-status-badge ${routeStatus}`}>
-          <span className="status-dot"></span>
-          {routeStatus === "active" ? "ROUTE ACTIVE" : "ROUTE PAUSED"}
-        </div>
+    <section className="route-history-card">
+      <div className="route-section-heading">
+        <div><p className="eyebrow">RIDE HISTORY</p><h3>Recent Routes</h3></div>
+        <div className="route-history-tools"><div className="route-search"><MapPin size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search routes" /></div><span className="route-count">{filteredRoutes.length} rides</span></div>
       </div>
-
-      <div className="route-overview-grid">
-        <div className="current-route-card">
-          <div className="route-card-top">
-            <div>
-              <p className="route-card-label">CURRENT ROUTE</p>
-              <h3>Marina Beach Ride</h3>
-            </div>
-
-            <div className="route-card-icon">
-              <Route size={21} />
-            </div>
-          </div>
-
-          <div className="route-points">
-            <div className="route-point">
-              <span className="route-point-dot start"></span>
-              <div>
-                <small>START</small>
-                <strong>{routeData.start}</strong>
-              </div>
-            </div>
-
-            <div className="route-line"></div>
-
-            <div className="route-point">
-              <span className="route-point-dot end"></span>
-              <div>
-                <small>DESTINATION</small>
-                <strong>{routeData.destination}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="route-progress-section">
-            <div className="route-progress-heading">
-              <span>ROUTE PROGRESS</span>
-              <strong>{routeData.progress}%</strong>
-            </div>
-
-            <div className="route-progress-track">
-              <div
-                className="route-progress-fill"
-                style={{ width: `${routeData.progress}%` }}
-              ></div>
-            </div>
-
-            <div className="route-progress-meta">
-              <span>Started {routeData.startedAt}</span>
-              <span>On route</span>
-            </div>
-          </div>
-
-          <button
-            className="route-action-button"
-            onClick={handleRouteAction}
-          >
-            {routeStatus === "active" ? (
-              <>
-                <Activity size={17} />
-                Pause Route
-              </>
-            ) : (
-              <>
-                <Navigation size={17} />
-                Resume Route
-              </>
-            )}
+      <div className="route-history-list">
+        {filteredRoutes.length === 0 ? <div className="route-empty-state"><Route size={24} /><strong>No matching routes</strong><span>Try another route name.</span></div> : filteredRoutes.map((item, index) => (
+          <button className={`route-history-row ${selectedRoute === index ? "selected" : ""}`} key={`${item.from}-${index}`} onClick={() => setSelectedRoute(index)}>
+            <div className="history-route-icon"><Route size={18} /></div>
+            <div className="history-route-path"><strong>{item.from}</strong><span><Navigation size={11} />{item.to}</span></div>
+            <div className="history-detail"><span>DISTANCE</span><strong>{item.distance}</strong></div>
+            <div className="history-detail"><span>TIME</span><strong>{item.time}</strong></div>
+            <div className="history-status"><span className="completed-dot"></span><strong>{item.status}</strong><small>{item.date}</small></div>
           </button>
-        </div>
-
-        <div className="route-stats-grid">
-          <div className="route-stat-card">
-            <div className="route-stat-icon blue">
-              <Route size={19} />
-            </div>
-            <span>DISTANCE</span>
-            <strong>{routeData.distance}</strong>
-            <small>Current route</small>
-          </div>
-
-          <div className="route-stat-card">
-            <div className="route-stat-icon purple">
-              <Clock3 size={19} />
-            </div>
-            <span>ETA</span>
-            <strong>{routeData.eta}</strong>
-            <small>Estimated arrival</small>
-          </div>
-
-          <div className="route-stat-card">
-            <div className="route-stat-icon green">
-              <Gauge size={19} />
-            </div>
-            <span>SPEED</span>
-            <strong>{routeData.speed}</strong>
-            <small>Current speed</small>
-          </div>
-
-          <div className="route-stat-card">
-            <div className="route-stat-icon orange">
-              <MapPin size={19} />
-            </div>
-            <span>GPS STATUS</span>
-            <strong>Strong</strong>
-            <small>8 satellites</small>
-          </div>
-        </div>
+        ))}
       </div>
-
-      <section className="route-history-card">
-        <div className="route-section-heading">
-          <div>
-            <p className="eyebrow">RIDE HISTORY</p>
-            <h3>Recent Routes</h3>
-          </div>
-
-          <span className="route-count">
-            {recentRoutes.length} rides
-          </span>
-        </div>
-
-        <div className="route-history-list">
-          {recentRoutes.map((item, index) => (
-            <div className="route-history-row" key={`${item.from}-${index}`}>
-              <div className="history-route-icon">
-                <Route size={18} />
-              </div>
-
-              <div className="history-route-path">
-                <strong>{item.from}</strong>
-                <span>
-                  <Navigation size={11} />
-                  {item.to}
-                </span>
-              </div>
-
-              <div className="history-detail">
-                <span>DISTANCE</span>
-                <strong>{item.distance}</strong>
-              </div>
-
-              <div className="history-detail">
-                <span>TIME</span>
-                <strong>{item.time}</strong>
-              </div>
-
-              <div className="history-status">
-                <span className="completed-dot"></span>
-                <strong>{item.status}</strong>
-                <small>{item.date}</small>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="route-hardware-note">
-        <Route size={18} />
-        <div>
-          <strong>Route data integration</strong>
-          <span>
-            Route history is currently using demo ride data. During hardware
-            integration, GPS coordinates from the NEO-6M will update the active
-            route and ride history automatically.
-          </span>
-        </div>
-      </div>
-    </div>
+      {selectedRoute !== null && filteredRoutes[selectedRoute] && <div className="route-selected-feedback"><CheckCircle2 size={16} />Selected: {filteredRoutes[selectedRoute].from} → {filteredRoutes[selectedRoute].to}</div>}
+    </section>
   );
+}
+
+function RoutesPage({ telemetry }) {
+  return <RoutePlanner telemetry={telemetry} mode="routes" />;
 }
 
 
 function SettingsPage() {
-  const [saved, setSaved] = useState(false);
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [locationSharing, setLocationSharing] = useState(true);
-  const [buzzerEnabled, setBuzzerEnabled] = useState(true);
-  const [autoSms, setAutoSms] = useState(true);
+  const defaults = {
+    riderName: "Smart Helmet Rider",
+    helmetId: "HLM-001",
+    phone: "+91 XXXXX XXXXX",
+    emergencyGroup: "Family",
+    alertsEnabled: true,
+    locationSharing: true,
+    buzzerEnabled: true,
+    autoSms: true,
+    countdown: "10",
+    mapType: "Street",
+    units: "Metric (km / km/h)",
+    language: "English",
+  };
 
+  const [settings, setSettings] = useState(() => {
+    try {
+      return { ...defaults, ...JSON.parse(localStorage.getItem("helmetra_settings") || "{}") };
+    } catch {
+      return defaults;
+    }
+  });
+  const [saved, setSaved] = useState(false);
+
+  const update = (key, value) => setSettings((current) => ({ ...current, [key]: value }));
   const saveSettings = () => {
+    localStorage.setItem("helmetra_settings", JSON.stringify(settings));
+    localStorage.setItem("helmetra_user", settings.riderName || "Rider");
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2200);
+  };
+  const resetSettings = () => {
+    setSettings(defaults);
+    localStorage.setItem("helmetra_settings", JSON.stringify(defaults));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   };
 
-  const resetSettings = () => {
-    setAlertsEnabled(true);
-    setLocationSharing(true);
-    setBuzzerEnabled(true);
-    setAutoSms(true);
-    setSaved(false);
-  };
-
   const SettingToggle = ({ label, description, enabled, onChange }) => (
     <div className="setting-row">
-      <div className="setting-row-text">
-        <strong>{label}</strong>
-        <span>{description}</span>
-      </div>
-      <button
-        type="button"
-        className={`settings-toggle ${enabled ? "on" : ""}`}
-        onClick={() => onChange(!enabled)}
-        aria-label={`${label} ${enabled ? "enabled" : "disabled"}`}
-      >
-        <span></span>
-      </button>
+      <div className="setting-row-text"><strong>{label}</strong><span>{description}</span></div>
+      <button type="button" className={`settings-toggle ${enabled ? "on" : ""}`} onClick={() => onChange(!enabled)} aria-label={`${label} ${enabled ? "enabled" : "disabled"}`}><span></span></button>
     </div>
   );
 
   return (
-    <div className="settings-page">
+    <div className="settings-page page-enter">
       <div className="settings-page-header">
-        <div>
-          <p className="eyebrow">SYSTEM CONFIGURATION</p>
-          <h3>Settings</h3>
-          <p className="page-description">
-            Manage your rider profile, helmet connection and safety preferences.
-          </p>
-        </div>
-
-        {saved && (
-          <div className="settings-saved">
-            <CheckCircle2 size={15} />
-            Settings saved
-          </div>
-        )}
+        <div><p className="eyebrow">SYSTEM CONFIGURATION</p><h3>Settings</h3><p className="page-description">Manage your rider profile, safety preferences and application behaviour.</p></div>
+        {saved && <div className="settings-saved"><CheckCircle2 size={15} />Settings saved locally</div>}
       </div>
 
       <div className="settings-layout">
         <div className="settings-main">
           <section className="settings-card profile-settings-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon blue">
-                <UserRound size={18} />
-              </div>
-              <div>
-                <h4>Rider Profile</h4>
-                <span>Basic rider information</span>
-              </div>
-            </div>
-
+            <div className="settings-card-heading"><div className="settings-heading-icon blue"><UserRound size={18} /></div><div><h4>Rider Profile</h4><span>Your local rider information</span></div></div>
             <div className="settings-form-grid">
-              <label className="settings-field">
-                <span>RIDER NAME</span>
-                <input type="text" defaultValue="Helmetra Rider" />
-              </label>
-
-              <label className="settings-field">
-                <span>HELMET ID</span>
-                <input type="text" defaultValue="HLM-001" />
-              </label>
-
-              <label className="settings-field">
-                <span>PHONE NUMBER</span>
-                <input type="tel" defaultValue="+91 XXXXX XXXXX" />
-              </label>
-
-              <label className="settings-field">
-                <span>EMERGENCY GROUP</span>
-                <select defaultValue="Family">
-                  <option>Family</option>
-                  <option>Friends</option>
-                  <option>Personal</option>
-                </select>
-              </label>
+              <label className="settings-field"><span>RIDER NAME</span><input value={settings.riderName} onChange={(e) => update("riderName", e.target.value)} /></label>
+              <label className="settings-field"><span>HELMET ID</span><input value={settings.helmetId} onChange={(e) => update("helmetId", e.target.value)} /></label>
+              <label className="settings-field"><span>PHONE NUMBER</span><input value={settings.phone} onChange={(e) => update("phone", e.target.value)} /></label>
+              <label className="settings-field"><span>EMERGENCY GROUP</span><select value={settings.emergencyGroup} onChange={(e) => update("emergencyGroup", e.target.value)}><option>Family</option><option>Friends</option><option>Personal</option></select></label>
             </div>
           </section>
 
           <section className="settings-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon green">
-                <ShieldCheck size={18} />
-              </div>
-              <div>
-                <h4>Safety & Alerts</h4>
-                <span>Configure automatic safety responses</span>
-              </div>
-            </div>
-
+            <div className="settings-card-heading"><div className="settings-heading-icon green"><ShieldCheck size={18} /></div><div><h4>Safety & Alerts</h4><span>Configure the software safety response</span></div></div>
             <div className="settings-list">
-              <SettingToggle
-                label="Emergency alerts"
-                description="Show an alert when an accident or SOS event is detected."
-                enabled={alertsEnabled}
-                onChange={setAlertsEnabled}
-              />
-
-              <SettingToggle
-                label="Automatic emergency SMS"
-                description="Send the latest GPS location to emergency contacts after an accident."
-                enabled={autoSms}
-                onChange={setAutoSms}
-              />
-
-              <SettingToggle
-                label="Pre-alert buzzer"
-                description="Sound the buzzer during the emergency countdown before sending an alert."
-                enabled={buzzerEnabled}
-                onChange={setBuzzerEnabled}
-              />
+              <SettingToggle label="Emergency alerts" description="Show an alert when an accident or SOS event is detected." enabled={settings.alertsEnabled} onChange={(v) => update("alertsEnabled", v)} />
+              <SettingToggle label="Automatic emergency SMS" description="Keep the software setting ready for emergency messaging." enabled={settings.autoSms} onChange={(v) => update("autoSms", v)} />
+              <SettingToggle label="Pre-alert buzzer" description="Enable the countdown warning in the emergency simulator." enabled={settings.buzzerEnabled} onChange={(v) => update("buzzerEnabled", v)} />
             </div>
-
-            <div className="countdown-setting">
-              <div>
-                <strong>Cancellation countdown</strong>
-                <span>Time available to cancel a false accident alert.</span>
-              </div>
-              <select defaultValue="10">
-                <option value="5">5 seconds</option>
-                <option value="10">10 seconds</option>
-                <option value="15">15 seconds</option>
-                <option value="20">20 seconds</option>
-              </select>
-            </div>
+            <div className="countdown-setting"><div><strong>Cancellation countdown</strong><span>Time available to cancel a false emergency alert.</span></div><select value={settings.countdown} onChange={(e) => update("countdown", e.target.value)}><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option><option value="20">20 seconds</option></select></div>
           </section>
 
           <section className="settings-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon purple">
-                <MapPin size={18} />
-              </div>
-              <div>
-                <h4>Location & GPS</h4>
-                <span>Manage location tracking preferences</span>
-              </div>
-            </div>
-
-            <div className="settings-list">
-              <SettingToggle
-                label="Location sharing"
-                description="Allow the application to use the helmet's latest GPS position for safety features."
-                enabled={locationSharing}
-                onChange={setLocationSharing}
-              />
-            </div>
-
-            <div className="gps-info-box">
-              <div className="gps-info-item">
-                <Satellite size={16} />
-                <div>
-                  <span>GPS MODULE</span>
-                  <strong>NEO-6M</strong>
-                </div>
-              </div>
-
-              <div className="gps-info-item">
-                <MapPin size={16} />
-                <div>
-                  <span>UPDATE MODE</span>
-                  <strong>Periodic</strong>
-                </div>
-              </div>
-
-              <div className="gps-info-item">
-                <Activity size={16} />
-                <div>
-                  <span>STATUS</span>
-                  <strong className="online-text">Connected</strong>
-                </div>
-              </div>
-            </div>
+            <div className="settings-card-heading"><div className="settings-heading-icon purple"><MapPin size={18} /></div><div><h4>Location & GPS</h4><span>Control how location is shown inside the prototype</span></div></div>
+            <div className="settings-list"><SettingToggle label="Location sharing" description="Allow the application to use the current demo GPS position for safety features." enabled={settings.locationSharing} onChange={(v) => update("locationSharing", v)} /></div>
+            <div className="gps-info-box"><div className="gps-info-item"><Satellite size={16} /><div><span>GPS SOURCE</span><strong>Demo GPS</strong></div></div><div className="gps-info-item"><MapPin size={16} /><div><span>UPDATE MODE</span><strong>Periodic</strong></div></div><div className="gps-info-item"><Activity size={16} /><div><span>STATUS</span><strong className="online-text">Ready</strong></div></div></div>
           </section>
 
           <section className="settings-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon orange">
-                <Phone size={18} />
-              </div>
-              <div>
-                <h4>Emergency Contacts</h4>
-                <span>People who receive safety alerts</span>
-              </div>
-            </div>
-
-            <div className="contact-setting-list">
-              <div className="contact-setting">
-                <div className="contact-avatar">01</div>
-                <div>
-                  <strong>Primary Contact</strong>
-                  <span>+91 XXXXX XXXXX</span>
-                </div>
-                <span className="primary-contact-badge">PRIMARY</span>
-              </div>
-
-              <div className="contact-setting">
-                <div className="contact-avatar">02</div>
-                <div>
-                  <strong>Secondary Contact</strong>
-                  <span>+91 XXXXX XXXXX</span>
-                </div>
-                <button type="button" className="contact-edit-button">Edit</button>
-              </div>
-            </div>
+            <div className="settings-card-heading"><div className="settings-heading-icon orange"><Phone size={18} /></div><div><h4>Emergency Contacts</h4><span>People shown in the emergency simulator</span></div></div>
+            <div className="contact-setting-list"><div className="contact-setting"><div className="contact-avatar">01</div><div><strong>Primary Contact</strong><span>+91 XXXXX XXXXX</span></div><span className="primary-contact-badge">PRIMARY</span></div><div className="contact-setting"><div className="contact-avatar">02</div><div><strong>Family Contact</strong><span>+91 XXXXX XXXXX</span></div><button type="button" className="contact-edit-button" onClick={() => alert("Contact editing is available in the software prototype.")}>Edit</button></div></div>
           </section>
         </div>
 
         <aside className="settings-side">
           <section className="settings-card helmet-settings-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon dark">
-                <ShieldAlert size={18} />
-              </div>
-              <div>
-                <h4>Helmet Connection</h4>
-                <span>Hardware status</span>
-              </div>
-            </div>
-
-            <div className="helmet-connection">
-              <div className="helmet-status-icon">
-                <ShieldCheck size={24} />
-              </div>
-              <strong>HLM-001</strong>
-              <span><i></i> Connected</span>
-            </div>
-
-            <div className="connection-details">
-              <div>
-                <span>CONTROLLER</span>
-                <strong>ESP32</strong>
-              </div>
-              <div>
-                <span>FIRMWARE</span>
-                <strong>Demo v1.0</strong>
-              </div>
-              <div>
-                <span>LAST SYNC</span>
-                <strong>Just now</strong>
-              </div>
-            </div>
-
-            <button type="button" className="connection-button">
-              <Wifi size={15} />
-              Test Connection
-            </button>
+            <div className="settings-card-heading"><div className="settings-heading-icon dark"><ShieldAlert size={18} /></div><div><h4>Helmet Profile</h4><span>Software simulation</span></div></div>
+            <div className="helmet-connection"><div className="helmet-status-icon"><ShieldCheck size={24} /></div><strong>{settings.helmetId}</strong><span><i></i> Software Ready</span></div>
+            <div className="connection-details"><div><span>PROFILE</span><strong>{settings.riderName}</strong></div><div><span>MODE</span><strong>Prototype</strong></div><div><span>STATUS</span><strong>Ready</strong></div></div>
+            <button type="button" className="connection-button" onClick={() => alert("Software prototype is working correctly.")}><CheckCircle2 size={15} />Test Software</button>
           </section>
 
           <section className="settings-card preferences-card">
-            <div className="settings-card-heading">
-              <div className="settings-heading-icon blue">
-                <Bell size={18} />
-              </div>
-              <div>
-                <h4>App Preferences</h4>
-                <span>Interface behaviour</span>
-              </div>
-            </div>
-
-            <label className="settings-field compact">
-              <span>MAP TYPE</span>
-              <select defaultValue="Street">
-                <option>Street</option>
-                <option>Satellite</option>
-              </select>
-            </label>
-
-            <label className="settings-field compact">
-              <span>UNITS</span>
-              <select defaultValue="Metric">
-                <option>Metric (km / km/h)</option>
-                <option>Imperial (mi / mph)</option>
-              </select>
-            </label>
-
-            <label className="settings-field compact">
-              <span>LANGUAGE</span>
-              <select defaultValue="English">
-                <option>English</option>
-                <option>Tamil</option>
-              </select>
-            </label>
+            <div className="settings-card-heading"><div className="settings-heading-icon blue"><Settings size={18} /></div><div><h4>App Preferences</h4><span>Interface behaviour</span></div></div>
+            <label className="settings-field compact"><span>MAP TYPE</span><select value={settings.mapType} onChange={(e) => update("mapType", e.target.value)}><option>Street</option><option>Satellite</option></select></label>
+            <label className="settings-field compact"><span>UNITS</span><select value={settings.units} onChange={(e) => update("units", e.target.value)}><option>Metric (km / km/h)</option><option>Imperial (mi / mph)</option></select></label>
+            <label className="settings-field compact"><span>LANGUAGE</span><select value={settings.language} onChange={(e) => update("language", e.target.value)}><option>English</option><option>Tamil</option></select></label>
           </section>
 
-          <section className="settings-software-note">
-            <Activity size={17} />
-            <div>
-              <strong>Prototype mode</strong>
-              <span>
-                Settings currently control the web interface. Hardware values
-                will be synchronized with the ESP32 during backend integration.
-              </span>
-            </div>
-          </section>
+          <section className="settings-software-note"><Activity size={17} /><div><strong>Software-only mode</strong><span>All settings on this page are saved locally in your browser. No physical helmet connection is required.</span></div></section>
         </aside>
       </div>
 
-      <div className="settings-actions">
-        <button type="button" className="settings-reset-button" onClick={resetSettings}>
-          Reset
-        </button>
-        <button type="button" className="settings-save-button" onClick={saveSettings}>
-          <CheckCircle2 size={16} />
-          Save Settings
-        </button>
-      </div>
+      <div className="settings-actions"><button type="button" className="settings-reset-button" onClick={resetSettings}>Reset</button><button type="button" className="settings-save-button" onClick={saveSettings}><CheckCircle2 size={16} />Save Settings</button></div>
     </div>
   );
 }
@@ -1262,7 +704,7 @@ function EmergencyPage({ telemetry }) {
               <span className="emergency-card-label">ALERT CANCELLED</span>
               <h3>False alert cancelled</h3>
               <p>
-                No emergency event was recorded. Your Helmetra system remains active and ready.
+                No emergency event was recorded. Your Smart Helmet remains active and ready.
               </p>
 
               {eventMessage && <div className="event-feedback cancelled">{eventMessage}</div>}
@@ -1608,179 +1050,219 @@ function SystemStatusPage({ telemetry }) {
   );
 }
 
-function HelpSupportPage() {
+
+function HelpPage() {
+  const [openFaq, setOpenFaq] = useState(0);
   const faqs = [
-    {
-      q: "How does automatic accident detection work?",
-      a: "The MPU6050 measures acceleration and gyroscope movement. The ESP32 can evaluate sudden impact or abnormal motion and send an accident event to the backend."
-    },
-    {
-      q: "How does GPS tracking work?",
-      a: "The NEO-6M provides latitude and longitude. Helmetra can display the latest position on the map and use it for emergency location sharing."
-    },
-    {
-      q: "What happens when I press SOS?",
-      a: "The emergency workflow starts immediately. In a hardware-connected version, the ESP32 can send the latest GPS coordinates through the backend and GSM emergency system."
-    },
-    {
-      q: "Can I cancel a false accident alert?",
-      a: "Yes. The emergency workflow includes a countdown so the rider can cancel a false detection before the alert is finalized."
-    },
-    {
-      q: "Can I use Navigation without the helmet's current location?",
-      a: "Yes. Helmetra Navigation supports any starting location and any destination. You can search both locations independently."
-    },
-    {
-      q: "When will the real hardware values appear?",
-      a: "During hardware integration, ESP32 telemetry will be sent to the backend API. The same dashboard, tracking and system-status screens can then display live sensor data."
-    },
+    ["How does accident detection work?", "The prototype simulates the accident-detection flow and starts a cancellation countdown before an emergency event is recorded."],
+    ["Can I plan a route?", "Yes. Navigation uses a live map, place search and public routing services to calculate a driving route."],
+    ["Does SOS send a real SMS?", "Not in this software-only version. The emergency page demonstrates the alert flow without sending a real message."],
+    ["Where are my settings stored?", "Your rider settings are stored locally in this browser using localStorage."],
   ];
-
   return (
-    <div className="help-page">
-      <div className="help-header">
-        <div>
-          <p className="eyebrow">SUPPORT CENTER</p>
-          <h3>Help & Support</h3>
-          <p className="page-description">
-            Learn how Helmetra works and find answers about tracking, navigation and emergency protection.
-          </p>
-        </div>
-        <div className="help-header-icon"><HelpCircle size={30} /></div>
-      </div>
-
+    <div className="help-page page-enter">
+      <div className="help-hero"><div><p className="eyebrow">HELMETRA SUPPORT</p><h3>Help & Support</h3><p>Everything you need to understand and use the Smart Helmet software prototype.</p></div><div className="help-hero-icon"><HelpCircle size={38} /></div></div>
       <div className="help-grid">
-        <section className="help-card help-contact-card">
-          <div className="help-card-icon"><MessageSquare size={21} /></div>
-          <h4>Need help?</h4>
-          <p>For your college prototype, check the FAQ first. Hardware integration can be connected to the same interface later.</p>
-          <div className="help-contact-row"><ShieldCheck size={16} /><span>Helmetra Safety System</span></div>
-          <div className="help-contact-row"><MailIcon size={16} /><span>Support available through your project team</span></div>
-        </section>
-
-        <section className="help-card">
-          <div className="help-section-title">
-            <HelpCircle size={19} />
-            <div>
-              <h4>Frequently Asked Questions</h4>
-              <span>Quick answers for riders</span>
-            </div>
-          </div>
-
-          <div className="faq-list">
-            {faqs.map((faq) => (
-              <details className="faq-item" key={faq.q}>
-                <summary>{faq.q}<ChevronDown size={17} /></summary>
-                <p>{faq.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+        <section className="help-card"><div className="help-card-heading"><div className="help-icon blue"><ShieldCheck size={19} /></div><div><h4>Using Helmetra</h4><span>Quick software guide</span></div></div><div className="help-steps"><div><b>01</b><strong>Dashboard</strong><span>See your ride status, GPS, battery and protection overview.</span></div><div><b>02</b><strong>Navigation</strong><span>Search a destination and calculate a route from the demo GPS position.</span></div><div><b>03</b><strong>Emergency</strong><span>Run an SOS or accident simulation with a 10-second cancellation window.</span></div><div><b>04</b><strong>Routes</strong><span>Review the active route and recent ride history.</span></div></div></section>
+        <section className="help-card"><div className="help-card-heading"><div className="help-icon purple"><MessageSquare size={19} /></div><div><h4>Frequently Asked Questions</h4><span>Common prototype questions</span></div></div><div className="faq-list">{faqs.map(([q,a], i) => <div className={`faq-item ${openFaq === i ? "open" : ""}`} key={q}><button type="button" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}><span>{q}</span><span>{openFaq === i ? "−" : "+"}</span></button>{openFaq === i && <p>{a}</p>}</div>)}</div></section>
       </div>
+      <div className="help-contact-grid"><div className="help-contact-card"><Phone size={21} /><div><strong>Emergency support</strong><span>Use the Emergency page for the SOS and accident response simulator.</span></div></div><div className="help-contact-card"><Settings size={21} /><div><strong>Need to change something?</strong><span>Open Settings to update your rider profile and software preferences.</span></div></div><div className="help-contact-card"><Activity size={21} /><div><strong>Prototype status</strong><span>Software-only demonstration. Hardware merging is not required for this version.</span></div></div></div>
     </div>
   );
 }
 
-function MailIcon({ size = 18 }) {
-  return <MessageSquare size={size} />;
-}
 
-function AuthScreen({ mode, setMode, onAuthenticated }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function AuthPage({ onAuthenticated }) {
+  const [mode, setMode] = useState("login");
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
 
-  const submit = (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim() || (mode === "signup" && !name.trim())) {
-      setError("Please fill in all required fields.");
+    if (!form.email.trim() || !form.password.trim()) {
+      setError("Please enter your email and password.");
       return;
     }
 
-    const account = {
-      name: name.trim() || "Helmetra Rider",
-      email: email.trim(),
-    };
+    if (mode === "signup" && !form.name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
 
-    localStorage.setItem("helmetraAccount", JSON.stringify(account));
-    localStorage.setItem("helmetraAuthenticated", "true");
-    onAuthenticated(account);
+    // Prototype-only authentication. Replace with backend auth later.
+    localStorage.setItem("helmetra_authenticated", "true");
+    localStorage.setItem("helmetra_user", form.name.trim() || "Rider");
+    onAuthenticated();
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    setError("");
+    setShowPassword(false);
   };
 
   return (
-    <div className="auth-screen">
-      <div className="auth-background-glow auth-glow-one"></div>
-      <div className="auth-background-glow auth-glow-two"></div>
-
-      <div className="auth-card">
-        <div className="auth-brand">
-          <div className="auth-brand-icon"><ShieldCheck size={28} /></div>
-          <div>
-            <strong>Helmetra</strong>
-            <span>SMART RIDER SAFETY</span>
-          </div>
-        </div>
-
-        <div className="auth-heading">
-          <p className="eyebrow">{mode === "signin" ? "WELCOME BACK" : "GET STARTED"}</p>
-          <h1>{mode === "signin" ? "Sign in to Helmetra" : "Create your Helmetra account"}</h1>
-          <p>{mode === "signin" ? "Access your safety dashboard and connected helmet controls." : "Set up your rider account for the Helmetra safety system."}</p>
-        </div>
-
-        <form className="auth-form" onSubmit={submit}>
-          {mode === "signup" && (
-            <label>
-              <span>RIDER NAME</span>
-              <div className="auth-input"><UserRound size={17} /><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" /></div>
-            </label>
-          )}
-
-          <label>
-            <span>EMAIL</span>
-            <div className="auth-input"><MessageSquare size={17} /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" /></div>
-          </label>
-
-          <label>
-            <span>PASSWORD</span>
-            <div className="auth-input"><ShieldAlert size={17} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" /></div>
-          </label>
-
-          {error && <div className="auth-error">{error}</div>}
-
-          <button className="auth-submit" type="submit">
-            {mode === "signin" ? <LogIn size={18} /> : <UserPlus size={18} />}
-            {mode === "signin" ? "Sign In" : "Create Account"}
-          </button>
-        </form>
-
-        <div className="auth-switch">
-          <span>{mode === "signin" ? "Don't have an account?" : "Already have an account?"}</span>
-          <button type="button" onClick={() => { setError(""); setMode(mode === "signin" ? "signup" : "signin"); }}>
-            {mode === "signin" ? "Sign Up" : "Sign In"}
-          </button>
-        </div>
-
-        <small className="auth-demo-note">Prototype authentication • account details are stored locally in this browser.</small>
+    <div className="auth-shell">
+      <div className="auth-aurora auth-aurora-one"></div>
+      <div className="auth-aurora auth-aurora-two"></div>
+      <div className="auth-grid"></div>
+      <div className="auth-stars">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
+
+      <div className="auth-brand">
+        <div className="auth-brand-icon"><ShieldCheck size={27} /></div>
+        <div>
+          <strong>Helmetra</strong>
+          <span>SMART SAFETY</span>
+        </div>
+      </div>
+
+      <div className="auth-layout">
+        <section className="auth-showcase">
+          <div className="auth-kicker">SMART HELMET SYSTEM</div>
+          <h1>Ride smart.<br /><span>Stay protected.</span></h1>
+          <p>
+            Your connected safety companion for live tracking, accident detection,
+            emergency alerts and safer navigation.
+          </p>
+
+          <div className="auth-feature-row">
+            <div><ShieldCheck size={17} /><span>Accident detection</span></div>
+            <div><MapPin size={17} /><span>Live GPS tracking</span></div>
+            <div><Siren size={17} /><span>Emergency response</span></div>
+          </div>
+        </section>
+
+        <section className="auth-card">
+          <div className="auth-card-top">
+            <div className="auth-card-icon">
+              {mode === "login" ? <LogIn size={21} /> : <UserPlus size={21} />}
+            </div>
+            <div>
+              <span className="auth-mini-label">HELMETRA ACCOUNT</span>
+              <h2>{mode === "login" ? "Welcome back" : "Create your account"}</h2>
+              <p>
+                {mode === "login"
+                  ? "Sign in to access your safety dashboard."
+                  : "Set up your rider profile to get started."}
+              </p>
+            </div>
+          </div>
+
+          <div className="auth-tabs">
+            <button className={mode === "login" ? "active" : ""} onClick={() => switchMode("login")} type="button">
+              Sign In
+            </button>
+            <button className={mode === "signup" ? "active" : ""} onClick={() => switchMode("signup")} type="button">
+              Sign Up
+            </button>
+          </div>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {mode === "signup" && (
+              <label>
+                <span>Rider name</span>
+                <div className="auth-input-wrap">
+                  <UserRound size={18} />
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Enter your name"
+                    autoComplete="name"
+                  />
+                </div>
+              </label>
+            )}
+
+            <label>
+              <span>Email address</span>
+              <div className="auth-input-wrap">
+                <Mail size={18} />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Password</span>
+              <div className="auth-input-wrap">
+                <Lock size={18} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Enter your password"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                />
+                <button
+                  type="button"
+                  className="auth-eye"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            {mode === "login" && (
+              <div className="auth-form-options">
+                <label className="auth-check">
+                  <input type="checkbox" />
+                  <span>Remember me</span>
+                </label>
+                <button type="button" className="auth-link">Forgot password?</button>
+              </div>
+            )}
+
+            {error && <div className="auth-error">{error}</div>}
+
+            <button className="auth-submit" type="submit">
+              <span>{mode === "login" ? "Sign in to Helmetra" : "Create Helmetra account"}</span>
+              <ArrowRight size={18} />
+            </button>
+          </form>
+
+          <div className="auth-divider"><span>or</span></div>
+
+          <button
+            className="auth-demo"
+            type="button"
+            onClick={() => {
+              localStorage.setItem("helmetra_authenticated", "true");
+              localStorage.setItem("helmetra_user", "Demo Rider");
+              onAuthenticated();
+            }}
+          >
+            <ShieldCheck size={18} />
+            Continue with demo rider
+          </button>
+
+          <p className="auth-legal">
+            Prototype authentication • Your account is stored locally for this demo.
+          </p>
+        </section>
+      </div>
+
+      <div className="auth-footer">HELMETRA • SMART SAFETY • CONNECTED RIDING</div>
     </div>
   );
 }
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(
-    () => localStorage.getItem("helmetraAuthenticated") === "true"
+
+  const [authenticated, setAuthenticated] = useState(() =>
+    localStorage.getItem("helmetra_authenticated") === "true"
   );
-  const [authMode, setAuthMode] = useState("signin");
-  const [account, setAccount] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("helmetraAccount")) || { name: "Helmetra Rider", email: "" };
-    } catch {
-      return { name: "Helmetra Rider", email: "" };
-    }
-  });
 
   const [activePage, setActivePage] =
     useState("Dashboard");
@@ -1788,27 +1270,7 @@ function App() {
   const [mobileMenu, setMobileMenu] =
     useState(false);
 
-  const handleAuthenticated = (nextAccount) => {
-    setAccount(nextAccount);
-    setAuthenticated(true);
-    setActivePage("Dashboard");
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("helmetraAuthenticated");
-    setAuthenticated(false);
-    setAuthMode("signin");
-  };
-
-  if (!authenticated) {
-    return (
-      <AuthScreen
-        mode={authMode}
-        setMode={setAuthMode}
-        onAuthenticated={handleAuthenticated}
-      />
-    );
-  }
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Shared helmet telemetry from the local backend.
   const [telemetry, setTelemetry] = useState({
@@ -1914,8 +1376,14 @@ function App() {
     setActivePage(page);
 
     setMobileMenu(false);
+    setProfileOpen(false);
 
   };
+
+
+  if (!authenticated) {
+    return <AuthPage onAuthenticated={() => setAuthenticated(true)} />;
+  }
 
 
   return (
@@ -2051,25 +1519,20 @@ function App() {
         </nav>
 
 
-        <div className="sidebar-footer">
-          <div className="user-avatar">
-            {(account.name || "R").charAt(0).toUpperCase()}
-          </div>
-
-          <div className="sidebar-user-details">
-            <strong>{account.name || "Helmetra Rider"}</strong>
-            <small>Helmetra H001</small>
-          </div>
-
-          <button
-            type="button"
-            className="sidebar-logout"
-            onClick={handleLogout}
-            title="Sign out"
-            aria-label="Sign out"
-          >
-            <LogOut size={16} />
+        <div className="sidebar-footer-wrap">
+          <button type="button" className="sidebar-footer" onClick={() => setProfileOpen((v) => !v)} aria-expanded={profileOpen}>
+            <div className="user-avatar">{(localStorage.getItem("helmetra_user") || "R").charAt(0).toUpperCase()}</div>
+            <div><strong>{localStorage.getItem("helmetra_user") || "Rider"}</strong><small>Smart Helmet H001</small></div>
+            <span className="profile-chevron">⌃</span>
           </button>
+          {profileOpen && (
+            <div className="profile-menu">
+              <div className="profile-menu-head"><div className="user-avatar">{(localStorage.getItem("helmetra_user") || "R").charAt(0).toUpperCase()}</div><div><strong>{localStorage.getItem("helmetra_user") || "Rider"}</strong><small>Smart Helmet H001</small></div></div>
+              <button type="button" onClick={() => { setActivePage("Settings"); setProfileOpen(false); }}><Settings size={16} />Settings</button>
+              <button type="button" onClick={() => { setActivePage("Help & Support"); setProfileOpen(false); }}><HelpCircle size={16} />Help & Support</button>
+              <button type="button" className="logout-item" onClick={() => { localStorage.removeItem("helmetra_authenticated"); setAuthenticated(false); setProfileOpen(false); }}><LogOut size={16} />Log out</button>
+            </div>
+          )}
         </div>
 
       </aside>
@@ -2081,207 +1544,193 @@ function App() {
       <main className="main">
 
 
-        {/* TOP BAR — dashboard only. Other pages already have their own page header. */}
-        {activePage === "Dashboard" && (
-          <div className="topbar">
-            <div>
-              <p className="eyebrow">HELMETRA SYSTEM</p>
-              <h2>Dashboard</h2>
-            </div>
+        {/* TOP BAR */}
 
-            <div className="top-actions">
-              <div className="live-status">
-                <span className="status-dot"></span>
-                {telemetry.apiOnline ? "Live" : "Offline"}
-              </div>
+        <div className="topbar">
 
-            </div>
+          <div>
+
+            {activePage === "Dashboard" && (
+              <>
+                <p className="eyebrow">SMART HELMET SYSTEM</p>
+                <h2>Dashboard</h2>
+              </>
+            )}
+
           </div>
-        )}
+
+
+          <div className="top-actions">
+
+            <div className="live-status">
+
+              <span className="status-dot"></span>
+
+              {telemetry.apiOnline ? "Live" : "Offline"}
+
+            </div>
+
+
+
+
+          </div>
+
+        </div>
 
 
 
         {/* ================= DASHBOARD ================= */}
 
         {activePage === "Dashboard" && (
-          <div className="dashboard-v2">
+          <div className="dashboard-home">
 
-<section className="dashboard-hero-v2">
-              <div className="hero-copy-v2">
-                <p className="hero-label-v2">HELMETRA SYSTEM • HLM-001</p>
-                <h1>Ride smart.<br /><span>Stay protected.</span></h1>
-                <p className="hero-sub-v2">
-                  Your connected safety companion is monitoring your ride,
-                  location and helmet status in real time.
+            <section className="dashboard-welcome-card dashboard-command-hero">
+              <div className="dashboard-welcome-copy">
+                <p className="dashboard-kicker">SMART HELMET SYSTEM</p>
+                <h1>Ride safer. Stay connected.</h1>
+                <p>
+                  Your safety command center keeps GPS, accident detection, navigation and emergency protection visible at a glance.
                 </p>
-
-                <div className="hero-pills-v2">
-                  <div className="hero-pill-v2"><ShieldCheck size={15} /> Advanced Protection</div>
-                  <div className="hero-pill-v2"><MapPinned size={15} /> Live GPS</div>
-                  <div className="hero-pill-v2"><Siren size={15} /> Instant SOS</div>
+                <div className="command-hero-actions">
+                  <button type="button" onClick={() => handleNavigation("Live Tracking")}><MapPin size={16} />View live location</button>
+                  <button type="button" onClick={() => handleNavigation("Emergency")}><Siren size={16} />Emergency controls</button>
                 </div>
               </div>
 
-              <div className="dashboard-visual-v2" aria-hidden="true">
-                <div className="orbit orbit-one"></div>
-                <div className="orbit orbit-two"></div>
-                <div className="helmet-orb-v2">
-                  <div className="helmet-shell-v2">
-                    <div className="helmet-top-v2"></div>
-                    <div className="helmet-visor-v2"></div>
-                    <div className="helmet-chin-v2"></div>
-                    <div className="helmet-light-v2"></div>
-                  </div>
-                </div>
-                <div className="road-glow-v2"></div>
-                <div className="speed-lines-v2 speed-a"></div>
-                <div className="speed-lines-v2 speed-b"></div>
-                <div className="speed-lines-v2 speed-c"></div>
-              </div>
-
-              <div className="hero-safe-badge-v2">
-                <div className="safe-ring-v2">
-                  <ShieldCheck size={28} />
-                </div>
-                <strong>{telemetry.accidentDetected ? "ALERT" : "SAFE"}</strong>
-                <span>PROTECTION ACTIVE</span>
-              </div>
-            </section>
-
-            <section className="dashboard-stats-v2">
-              <div className="dash-stat-v2 blue-glow">
-                <div className="dash-stat-icon-v2"><MapPin size={22} /></div>
-                <div>
-                  <span>LOCATION</span>
-                  <strong>{telemetry.gpsStatus} GPS</strong>
-                  <small>8 satellites connected</small>
-                </div>
-                <i className="mini-live-v2">LIVE</i>
-              </div>
-
-              <div className="dash-stat-v2 green-glow">
-                <div className="dash-stat-icon-v2"><Activity size={22} /></div>
-                <div>
-                  <span>ACCIDENT MONITOR</span>
-                  <strong>{telemetry.accidentDetected ? "Detected" : "All Clear"}</strong>
-                  <small>{telemetry.accidentDetected ? "Emergency response ready" : "No abnormal movement"}</small>
-                </div>
-                <i className="mini-live-v2">SAFE</i>
-              </div>
-
-              <div className="dash-stat-v2 orange-glow">
-                <div className="dash-stat-icon-v2"><BatteryMedium size={22} /></div>
-                <div>
-                  <span>HELMET BATTERY</span>
-                  <strong>{telemetry.battery}%</strong>
-                  <small>Good condition</small>
-                </div>
-                <div className="battery-mini-v2"><span style={{ width: `${telemetry.battery}%` }}></span></div>
-              </div>
-
-              <div className="dash-stat-v2 purple-glow">
-                <div className="dash-stat-icon-v2"><Wifi size={22} /></div>
-                <div>
-                  <span>CONNECTION</span>
-                  <strong>{telemetry.connection}</strong>
-                  <small>{telemetry.apiOnline ? "Backend data connected" : "Waiting for backend"}</small>
-                </div>
-                <div className="signal-bars-v2"><b></b><b></b><b></b><b></b></div>
-              </div>
-            </section>
-
-            <section className="dashboard-main-grid-v2">
-              <div className="ride-overview-v2 glass-panel-v2">
-                <div className="panel-heading-v2">
+              <div className="dashboard-command-panel">
+                <div className="dashboard-command-header">
                   <div>
-                    <span>LIVE RIDE DATA</span>
-                    <h2>Ride Overview</h2>
+                    <span>SAFETY COMMAND CENTER</span>
+                    <strong>{telemetry.accidentDetected ? "Attention Required" : "Protection Active"}</strong>
                   </div>
-                  <div className="live-chip-v2"><i></i> Tracking live</div>
+                  <div className={`dashboard-command-status ${telemetry.accidentDetected ? "alert" : "safe"}`}><i></i>{telemetry.accidentDetected ? "ALERT" : "SYSTEM READY"}</div>
                 </div>
-
-                <div className="ride-metrics-v2">
-                  <div className="metric-card-v2">
-                    <div className="metric-icon-v2 cyan"><Gauge size={21} /></div>
-                    <span>CURRENT SPEED</span>
-                    <strong>{telemetry.speed} <em>km/h</em></strong>
-                    <div className="metric-spark-v2"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                  </div>
-
-                  <div className="metric-card-v2">
-                    <div className="metric-icon-v2 purple"><Route size={21} /></div>
-                    <span>TRIP DISTANCE</span>
-                    <strong>8.4 <em>km</em></strong>
-                    <small>Current ride</small>
-                  </div>
-
-                  <div className="metric-card-v2">
-                    <div className="metric-icon-v2 green"><Satellite size={21} /></div>
-                    <span>GPS SIGNAL</span>
-                    <strong>{telemetry.satellites} <em>satellites</em></strong>
-                    <small>Strong signal</small>
-                  </div>
-
-                  <div className="metric-card-v2">
-                    <div className="metric-icon-v2 pink"><Zap size={21} /></div>
-                    <span>RESPONSE</span>
-                    <strong>Instant</strong>
-                    <small>SOS system ready</small>
-                  </div>
+                <div className="dashboard-command-grid">
+                  <div className="dashboard-command-item"><div className="command-icon blue"><MapPin size={17} /></div><div><span>GPS</span><strong>{telemetry.gpsStatus}</strong><small>{telemetry.satellites} satellites</small></div></div>
+                  <div className="dashboard-command-item"><div className="command-icon green"><Activity size={17} /></div><div><span>ACCIDENT DETECTION</span><strong>{telemetry.accidentDetected ? "Detected" : "Armed"}</strong><small>MPU6050 monitoring</small></div></div>
+                  <div className="dashboard-command-item"><div className="command-icon purple"><Navigation size={17} /></div><div><span>NAVIGATION</span><strong>Ready</strong><small>Route planning available</small></div></div>
+                  <div className="dashboard-command-item"><div className="command-icon orange"><BatteryMedium size={17} /></div><div><span>BATTERY</span><strong>{telemetry.battery}%</strong><small>{telemetry.battery > 20 ? "Healthy level" : "Charge soon"}</small></div></div>
                 </div>
-
-                <div className="ride-route-visual-v2">
-                  <div className="route-grid-v2"></div>
-                  <div className="route-line-v2"><span></span><span></span><span></span></div>
-                  <div className="route-start-v2"><MapPin size={16} /></div>
-                  <div className="route-end-v2"><Navigation size={16} /></div>
-                  <div className="route-caption-v2">
-                    <strong>Chennai • Active ride</strong>
-                    <span>Helmet telemetry is being monitored continuously</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="safety-panel-v2 glass-panel-v2">
-                <div className="panel-heading-v2">
-                  <div>
-                    <span>SAFETY CENTER</span>
-                    <h2>Protection Status</h2>
-                  </div>
-                  <div className="pulse-dot-v2"></div>
-                </div>
-
-                <div className="protection-core-v2">
-                  <div className="protection-ring-v2">
-                    <ShieldCheck size={36} />
-                  </div>
-                  <strong>{telemetry.accidentDetected ? "Attention required" : "You're protected"}</strong>
-                  <span>All safety systems are monitoring</span>
-                </div>
-
-                <div className="safety-list-v2">
-                  <div><Activity size={17} /><span>Impact detection</span><b>READY</b></div>
-                  <div><MapPinned size={17} /><span>GPS tracking</span><b>LIVE</b></div>
-                  <div><Radio size={17} /><span>Emergency response</span><b>READY</b></div>
-                  <div><BatteryMedium size={17} /><span>Power system</span><b>{telemetry.battery}%</b></div>
-                </div>
+                <div className="dashboard-command-footer"><ShieldCheck size={16} /><span>Continuous protection monitoring is active</span><i></i></div>
               </div>
             </section>
 
-            <section className="dashboard-actions-v2">
-              <button className="action-card-v2 action-blue" onClick={() => handleNavigation("Live Tracking")}>
-                <div><Map size={22} /><span>Live Tracking</span><small>See rider location and GPS signal</small></div>
-                <Navigation size={19} />
+            <section className="dashboard-summary-grid">
+              <div className="dashboard-summary-card">
+                <div className="dashboard-summary-icon blue"><MapPin size={20} /></div>
+                <div><span>GPS</span><strong>{telemetry.gpsStatus}</strong><small>{telemetry.satellites} satellites</small></div>
+              </div>
+              <div className="dashboard-summary-card">
+                <div className="dashboard-summary-icon green"><Gauge size={20} /></div>
+                <div><span>SPEED</span><strong>{telemetry.speed} km/h</strong><small>Current riding speed</small></div>
+              </div>
+              <div className="dashboard-summary-card">
+                <div className="dashboard-summary-icon orange"><BatteryMedium size={20} /></div>
+                <div><span>BATTERY</span><strong>{telemetry.battery}%</strong><small>Helmet battery</small></div>
+              </div>
+              <div className="dashboard-summary-card">
+                <div className="dashboard-summary-icon purple"><Wifi size={20} /></div>
+                <div><span>CONNECTION</span><strong>{telemetry.connection}</strong><small>Helmet data link</small></div>
+              </div>
+            </section>
+
+            <section className="dashboard-features-section">
+              <div className="dashboard-section-heading">
+                <div>
+                  <p className="dashboard-kicker">CONTROL CENTER</p>
+                  <h2>Smart Helmet Features</h2>
+                </div>
+                <span>Tap a card to open the feature</span>
+              </div>
+
+              <div className="dashboard-feature-grid">
+                <button className="dashboard-feature-card feature-blue" onClick={() => handleNavigation("Live Tracking")}>
+                  <div className="feature-card-icon"><Map size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">01 · LOCATION</span>
+                    <h3>Live Tracking</h3>
+                    <p>View the rider's live GPS position and current ride data on the map.</p>
+                    <div className="feature-card-status"><i></i>{telemetry.gpsStatus} GPS</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+
+                <button className="dashboard-feature-card feature-purple" onClick={() => handleNavigation("Navigation")}>
+                  <div className="feature-card-icon"><Navigation size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">02 · ROUTING</span>
+                    <h3>Navigation</h3>
+                    <p>Search a destination, calculate a route and view distance and ETA.</p>
+                    <div className="feature-card-status"><i></i>Route planning ready</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+
+                <button className="dashboard-feature-card feature-red" onClick={() => handleNavigation("Emergency")}>
+                  <div className="feature-card-icon"><Siren size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">03 · SAFETY</span>
+                    <h3>Emergency</h3>
+                    <p>Trigger SOS, handle accident alerts and share the latest location.</p>
+                    <div className="feature-card-status"><i></i>Emergency protection</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+
+                <button className="dashboard-feature-card feature-cyan" onClick={() => handleNavigation("Routes")}>
+                  <div className="feature-card-icon"><Route size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">04 · HISTORY</span>
+                    <h3>Routes</h3>
+                    <p>Review current route information and your recent ride history.</p>
+                    <div className="feature-card-status"><i></i>Ride history available</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+
+                <button className="dashboard-feature-card feature-green" onClick={() => handleNavigation("System Status")}>
+                  <div className="feature-card-icon"><Activity size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">05 · HARDWARE</span>
+                    <h3>System Status</h3>
+                    <p>Check ESP32, MPU6050, NEO-6M, SIM800L, buzzer and battery status.</p>
+                    <div className="feature-card-status"><i></i>Component monitoring</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+
+                <button className="dashboard-feature-card feature-orange" onClick={() => handleNavigation("Settings")}>
+                  <div className="feature-card-icon"><Settings size={23} /></div>
+                  <div className="feature-card-content">
+                    <span className="feature-card-label">06 · CONTROL</span>
+                    <h3>Settings</h3>
+                    <p>Manage rider details, emergency contacts and Smart Helmet preferences.</p>
+                    <div className="feature-card-status"><i></i>Configuration</div>
+                  </div>
+                  <ArrowRight size={20} className="feature-arrow" />
+                </button>
+              </div>
+            </section>
+
+            <section className="dashboard-bottom-grid">
+              <button className="dashboard-quick-card" onClick={() => handleNavigation("Emergency")}>
+                <div className="quick-card-icon emergency"><AlertTriangle size={22} /></div>
+                <div>
+                  <span>EMERGENCY ACCESS</span>
+                  <strong>Need immediate help?</strong>
+                  <small>Open SOS and emergency controls</small>
+                </div>
+                <ArrowRight size={18} />
               </button>
 
-              <button className="action-card-v2 action-purple" onClick={() => handleNavigation("Navigation")}>
-                <div><Route size={22} /><span>Plan a Route</span><small>Find your destination and ETA</small></div>
-                <Navigation size={19} />
-              </button>
-
-              <button className="action-card-v2 action-red" onClick={() => handleNavigation("Emergency")}>
-                <div><Siren size={22} /><span>Emergency Center</span><small>Send an SOS and share your location</small></div>
-                <AlertTriangle size={19} />
+              <button className="dashboard-quick-card" onClick={() => handleNavigation("System Status")}>
+                <div className="quick-card-icon system"><Activity size={22} /></div>
+                <div>
+                  <span>SYSTEM HEALTH</span>
+                  <strong>{telemetry.accidentDetected ? "Attention required" : "All systems normal"}</strong>
+                  <small>Open component diagnostics</small>
+                </div>
+                <ArrowRight size={18} />
               </button>
             </section>
 
@@ -2361,7 +1810,7 @@ function App() {
                       <Popup>
 
                         <strong>
-                          🪖 Helmetra
+                          🪖 Smart Helmet
                         </strong>
 
                         <br />
@@ -2544,7 +1993,7 @@ function App() {
 
         {/* ================= ROUTES ================= */}
 
-        {activePage === "Routes" && <RoutesPage />}
+        {activePage === "Routes" && <RoutesPage telemetry={telemetry} />}
 
         {/* ================= SETTINGS ================= */}
 
@@ -2554,14 +2003,12 @@ function App() {
 
         {activePage === "System Status" && <SystemStatusPage telemetry={telemetry} />}
 
-        {/* ================= HELP & SUPPORT ================= */}
-
-        {activePage === "Help & Support" && <HelpSupportPage />}
-
 
         {/* ================= EMERGENCY ================= */}
 
         {activePage === "Emergency" && <EmergencyPage telemetry={telemetry} />}
+
+        {activePage === "Help & Support" && <HelpPage />}
 
 
         {apiError && (
@@ -2582,8 +2029,7 @@ function App() {
           activePage !== "Routes" &&
           activePage !== "Settings" &&
           activePage !== "System Status" &&
-          activePage !== "Emergency" &&
-          activePage !== "Help & Support" && (
+          activePage !== "Emergency" && (
 
             <section className="coming-soon">
 
@@ -2617,8 +2063,8 @@ function App() {
 
               <p>
                 This section will be built
-                and connected to the Helmetra
-                hardware in the next
+                and connected to the Smart
+                Helmet hardware in the next
                 stages.
               </p>
 
