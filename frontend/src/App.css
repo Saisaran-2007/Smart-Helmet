@@ -11837,3 +11837,1252 @@ body {
     padding: 18px !important;
   }
 }
+/* =========================================================
+   HELMETRA FINAL MOBILE REPAIR
+   Permanent mobile layout override
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .app {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Mobile header */
+  .mobile-header {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    box-sizing: border-box !important;
+    padding: 0 16px !important;
+    z-index: 10000 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: rgba(5, 12, 27, .96) !important;
+    border-bottom: 1px solid rgba(91, 126, 255, .18) !important;
+    backdrop-filter: blur(18px) !important;
+  }
+
+  .mobile-menu-button {
+    display: grid !important;
+    place-items: center !important;
+    width: 42px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: rgba(79, 140, 255, .10) !important;
+    color: #eaf0ff !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-header .brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    margin-right: auto !important;
+    margin-left: 10px !important;
+    color: #f4f7fb !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+
+  .mobile-header .brand-icon {
+    width: 36px !important;
+    height: 36px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 10px !important;
+    color: #5b8cff !important;
+    background: rgba(79, 140, 255, .12) !important;
+    border: 1px solid rgba(79, 140, 255, .22) !important;
+  }
+
+  /* Sidebar becomes an actual mobile drawer */
+  .app .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: min(290px, 86vw) !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 22px 15px 18px !important;
+    z-index: 11000 !important;
+    transform: translateX(-105%) !important;
+    transition: transform .25s ease !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* THE IMPORTANT FIX:
+     Main must NEVER reserve sidebar width on mobile. */
+  .app .main,
+  .main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .app .topbar {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+  }
+
+  .app .topbar h2 {
+    font-size: 30px !important;
+  }
+
+  /* Dashboard */
+  .app .dashboard-v2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 250px !important;
+    height: auto !important;
+    padding: 26px 22px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .app .hero-copy-v2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+
+  .app .hero-copy-v2 h1 {
+    font-size: 40px !important;
+    line-height: .98 !important;
+  }
+
+  .app .hero-sub-v2 {
+    max-width: 100% !important;
+    font-size: 13px !important;
+  }
+
+  .app .dashboard-visual-v2 {
+    display: none !important;
+  }
+
+  .app .dashboard-stats-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .dash-stat-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 88px !important;
+    box-sizing: border-box !important;
+    padding: 15px !important;
+  }
+
+  .app .dash-stat-v2 > div {
+    min-width: 0 !important;
+  }
+
+  .app .dash-stat-v2 strong,
+  .app .dash-stat-v2 small,
+  .app .dash-stat-v2 span {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .app .dashboard-main-grid-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .ride-overview-v2,
+  .app .safety-panel-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .ride-metrics-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 9px !important;
+  }
+
+  .app .metric-card-v2 {
+    min-width: 0 !important;
+  }
+
+  .app .dashboard-actions-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .action-card-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 86px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* All feature pages */
+  .app .navigation-page,
+  .app .tracking-page,
+  .app .emergency-page,
+  .app .routes-page,
+  .app .system-status-page,
+  .app .settings-page,
+  .app .help-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .navigation-header,
+  .app .tracking-header,
+  .app .emergency-page-header,
+  .app .routes-page-header,
+  .app .settings-page-header,
+  .app .system-status-header-row,
+  .app .help-header {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* Navigation */
+  .app .navigation-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .navigation-map-card,
+  .app .navigation-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .navigation-map-card {
+    min-height: 360px !important;
+  }
+
+  .app .navigation-leaflet-map {
+    min-height: 340px !important;
+    height: 340px !important;
+  }
+
+  /* Tracking */
+  .app .tracking-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .tracking-map-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .tracking-map-container,
+  .app .tracking-leaflet-map {
+    height: 360px !important;
+    min-height: 360px !important;
+  }
+
+  /* Emergency */
+  .app .emergency-main-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .sos-control-card {
+    min-height: 420px !important;
+    padding: 22px !important;
+  }
+
+  /* Routes */
+  .app .route-overview-grid,
+  .app .routes-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .route-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .route-stat-card {
+    min-height: 130px !important;
+  }
+
+  .app .route-history-row {
+    grid-template-columns: auto 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .history-detail,
+  .app .history-status {
+    grid-column: 2 !important;
+  }
+
+  /* System status */
+  .app .system-status-summary,
+  .app .system-status-lower-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .app .system-component-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Settings */
+  .app .settings-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .settings-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Help */
+  .app .help-page {
+    padding: 4px 0 30px !important;
+  }
+
+  .app .help-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .help-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 18px !important;
+  }
+
+  .app .help-contact-card {
+    display: block !important;
+  }
+
+  .app .help-contact-row {
+    width: 100% !important;
+  }
+
+  /* Backend banner */
+  .app .api-offline-banner {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 14px !important;
+  }
+}
+
+@media (max-width: 420px) {
+
+  .app .main {
+    padding: 12px !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    padding: 22px 18px !important;
+  }
+
+  .app .hero-copy-v2 h1 {
+    font-size: 36px !important;
+  }
+
+  .app .ride-metrics-v2,
+  .app .route-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app .mobile-header {
+    padding: 0 12px !important;
+  }
+}
+/* =========================================================
+   HELMETRA FINAL MOBILE REPAIR
+   Desktop UI remains unchanged
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .app {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* MOBILE HEADER */
+  .mobile-header {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    box-sizing: border-box !important;
+    padding: 0 16px !important;
+    z-index: 10000 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: rgba(5, 12, 27, .96) !important;
+    border-bottom: 1px solid rgba(91, 126, 255, .18) !important;
+    backdrop-filter: blur(18px) !important;
+  }
+
+  .mobile-menu-button {
+    display: grid !important;
+    place-items: center !important;
+    width: 42px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: rgba(79, 140, 255, .10) !important;
+    color: #eaf0ff !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-header .brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    margin-right: auto !important;
+    margin-left: 10px !important;
+    color: #f4f7fb !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+
+  .mobile-header .brand-icon {
+    width: 36px !important;
+    height: 36px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 10px !important;
+    color: #5b8cff !important;
+    background: rgba(79, 140, 255, .12) !important;
+    border: 1px solid rgba(79, 140, 255, .22) !important;
+  }
+
+  /* SIDEBAR */
+  .app .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: min(290px, 86vw) !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 22px 15px 18px !important;
+    z-index: 11000 !important;
+    transform: translateX(-105%) !important;
+    transition: transform .25s ease !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* MAIN CONTENT — FIXES THE HUGE LEFT BLANK SPACE */
+  .app .main,
+  .main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .app .topbar {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+  }
+
+  .app .topbar h2 {
+    font-size: 30px !important;
+  }
+
+  /* ================= DASHBOARD ================= */
+
+  .app .dashboard-v2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 250px !important;
+    height: auto !important;
+    padding: 26px 22px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .app .hero-copy-v2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+
+  .app .hero-copy-v2 h1 {
+    font-size: 40px !important;
+    line-height: .98 !important;
+  }
+
+  .app .hero-sub-v2 {
+    max-width: 100% !important;
+    font-size: 13px !important;
+  }
+
+  .app .dashboard-visual-v2 {
+    display: none !important;
+  }
+
+  .app .dashboard-stats-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .dash-stat-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 88px !important;
+    box-sizing: border-box !important;
+    padding: 15px !important;
+  }
+
+  .app .dash-stat-v2 > div {
+    min-width: 0 !important;
+  }
+
+  .app .dash-stat-v2 strong,
+  .app .dash-stat-v2 small,
+  .app .dash-stat-v2 span {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .app .dashboard-main-grid-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .ride-overview-v2,
+  .app .safety-panel-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .ride-metrics-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 9px !important;
+  }
+
+  .app .metric-card-v2 {
+    min-width: 0 !important;
+  }
+
+  .app .dashboard-actions-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .action-card-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 86px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ================= ALL PAGES ================= */
+
+  .app .navigation-page,
+  .app .tracking-page,
+  .app .emergency-page,
+  .app .routes-page,
+  .app .system-status-page,
+  .app .settings-page,
+  .app .help-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .navigation-header,
+  .app .tracking-header,
+  .app .emergency-page-header,
+  .app .routes-page-header,
+  .app .settings-page-header,
+  .app .system-status-header-row,
+  .app .help-header {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* ================= NAVIGATION ================= */
+
+  .app .navigation-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .navigation-map-card,
+  .app .navigation-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .navigation-map-card {
+    min-height: 360px !important;
+  }
+
+  .app .navigation-leaflet-map {
+    min-height: 340px !important;
+    height: 340px !important;
+  }
+
+  /* ================= TRACKING ================= */
+
+  .app .tracking-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .tracking-map-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .tracking-map-container,
+  .app .tracking-leaflet-map {
+    height: 360px !important;
+    min-height: 360px !important;
+  }
+
+  /* ================= EMERGENCY ================= */
+
+  .app .emergency-main-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .sos-control-card {
+    min-height: 420px !important;
+    padding: 22px !important;
+  }
+
+  /* ================= ROUTES ================= */
+
+  .app .route-overview-grid,
+  .app .routes-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .route-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .route-stat-card {
+    min-height: 130px !important;
+  }
+
+  .app .route-history-row {
+    grid-template-columns: auto 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .history-detail,
+  .app .history-status {
+    grid-column: 2 !important;
+  }
+
+  /* ================= SYSTEM STATUS ================= */
+
+  .app .system-status-summary,
+  .app .system-status-lower-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .app .system-component-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ================= SETTINGS ================= */
+
+  .app .settings-layout {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .settings-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ================= HELP ================= */
+
+  .app .help-page {
+    padding: 4px 0 30px !important;
+  }
+
+  .app .help-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .help-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 18px !important;
+  }
+
+  .app .help-contact-card {
+    display: block !important;
+  }
+
+  .app .help-contact-row {
+    width: 100% !important;
+  }
+
+  /* ================= BACKEND BANNER ================= */
+
+  .app .api-offline-banner {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 14px !important;
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .app .main {
+    padding: 12px !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    padding: 22px 18px !important;
+  }
+
+  .app .hero-copy-v2 h1 {
+    font-size: 36px !important;
+  }
+
+  .app .ride-metrics-v2,
+  .app .route-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app .mobile-header {
+    padding: 0 12px !important;
+  }
+}
+/* =========================================================
+   HELMETRA — FINAL MOBILE OVERRIDE
+   DO NOT MOVE THIS BLOCK
+   ========================================================= */
+
+@media screen and (max-width: 900px), screen and (pointer: coarse) {
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .app {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* MOBILE HEADER */
+  .app .mobile-header {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+    z-index: 9999 !important;
+  }
+
+  /* SIDEBAR = MOBILE DRAWER */
+  .app .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+
+    width: min(280px, 84vw) !important;
+    height: 100vh !important;
+
+    margin: 0 !important;
+
+    transform: translateX(-110%) !important;
+    transition: transform .25s ease !important;
+
+    z-index: 10000 !important;
+  }
+
+  .app .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* ⭐ THE ACTUAL FIX ⭐
+     NEVER reserve sidebar space on mobile */
+  .app .main,
+  .app > .main {
+    display: block !important;
+
+    position: relative !important;
+
+    left: 0 !important;
+    right: auto !important;
+
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px !important;
+
+    box-sizing: border-box !important;
+
+    transform: none !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .app .topbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+  }
+
+  /* ALL PAGE CONTAINERS */
+  .app .page-content,
+  .app .dashboard-v2,
+  .app .tracking-page,
+  .app .navigation-page,
+  .app .emergency-page,
+  .app .routes-page,
+  .app .system-status-page,
+  .app .settings-page,
+  .app .help-page,
+  .app .coming-soon {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* DASHBOARD */
+  .app .dashboard-v2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    min-height: 0 !important;
+  }
+
+  .app .dashboard-theme-panel {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 245px !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .app .hero-copy-v2 {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .hero-copy-v2 h1 {
+    font-size: clamp(34px, 10vw, 44px) !important;
+    line-height: .98 !important;
+  }
+
+  .app .dashboard-visual-v2,
+  .app .dashboard-helmet-visual {
+    display: none !important;
+  }
+
+  /* STATUS CARDS */
+  .app .dashboard-stats-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .dash-stat-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 105px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .app .dash-stat-v2 * {
+    min-width: 0 !important;
+  }
+
+  /* MAIN DASHBOARD CONTENT */
+  .app .dashboard-main-grid-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    min-width: 0 !important;
+  }
+
+  .app .ride-overview-v2,
+  .app .safety-panel-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .ride-metrics-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 9px !important;
+  }
+
+  .app .dashboard-actions-v2 {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .app .action-card-v2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* NAVIGATION */
+  .app .navigation-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .navigation-map-card,
+  .app .navigation-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .navigation-leaflet-map {
+    width: 100% !important;
+    height: 340px !important;
+    min-height: 340px !important;
+  }
+
+  /* TRACKING */
+  .app .tracking-layout {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .tracking-map-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .tracking-map-container,
+  .app .tracking-leaflet-map {
+    width: 100% !important;
+    height: 340px !important;
+    min-height: 340px !important;
+  }
+
+  /* EMERGENCY */
+  .app .emergency-main-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .sos-control-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ROUTES */
+  .app .route-overview-grid,
+  .app .routes-layout {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .route-stats-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* SYSTEM STATUS */
+  .app .system-status-summary,
+  .app .system-status-lower-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .system-component-grid {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* SETTINGS */
+  .app .settings-layout {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .settings-main,
+  .app .settings-side {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app .settings-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* HELP */
+  .app .help-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .app .help-card,
+  .app .help-contact-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .app .help-contact-card {
+    display: block !important;
+  }
+
+  .app .help-contact-row {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* PREVENT TEXT FROM PUSHING THE PAGE SIDEWAYS */
+  .app h1,
+  .app h2,
+  .app h3,
+  .app h4,
+  .app p,
+  .app span,
+  .app strong,
+  .app small {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* BACKEND BANNER */
+  .app .api-offline-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media screen and (max-width: 430px) {
+
+  .app .main {
+    padding: 12px !important;
+  }
+
+  .app .mobile-header {
+    padding: 0 12px !important;
+  }
+
+  .app .dashboard-stats-v2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .app .ride-metrics-v2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .app .route-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app .dashboard-hero-v2 {
+    padding: 22px 18px !important;
+  }
+}
