@@ -263,38 +263,6 @@ From the backend directory:
 npm start
 ```
 
----
-
-## 📸 Screenshots
-
-Screenshots of the Smart Helmet web application can be added below.
-
-### 🏠 Dashboard
-
-_Add dashboard screenshot here._
-
-### 📍 Live Tracking
-
-_Add live tracking screenshot here._
-
-### 🧭 Navigation
-
-_Add navigation screenshot here._
-
-### 🚨 Emergency
-
-_Add emergency page screenshot here._
-
-### 🔧 System Status
-
-_Add system status screenshot here._
-
-### ⚙️ Settings
-
-_Add settings screenshot here._
-
----
-
 ## 🎯 Project Objectives
 
 The main objectives of the Smart Helmet project are:
