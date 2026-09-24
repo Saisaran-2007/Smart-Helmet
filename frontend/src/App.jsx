@@ -68,7 +68,7 @@ L.Icon.Default.mergeOptions({
 
 // Demo rider location
 const riderLocation = [13.0827, 80.2707];
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = "http://10.237.235.164:5000/api";
 
 
 // Map controls

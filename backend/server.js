@@ -121,6 +121,6 @@ app.post("/api/routes", (req, res) => {
   res.status(201).json(route);
 });
 
-app.listen(PORT, () => {
-  console.log(`Smart Helmet backend running at http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Smart Helmet backend running on port ${PORT}`);
 });
